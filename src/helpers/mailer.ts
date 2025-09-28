@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import User from "@/models/userModel";
 import bcryptjs from "bcryptjs";
+import crypto from "crypto";
 
 export const sendEmail = async ({
   email,
@@ -12,18 +13,23 @@ export const sendEmail = async ({
   userId: string;
 }) => {
   try {
-    // Create a hashed token
-    const hashedToken = await bcryptjs.hash(userId.toString(), 10);
+    // 1. Generate a secure, random token (this is the one we email)
+    const unhashedToken = crypto.randomBytes(20).toString("hex");
+
+    // 2. Hash the token (this is what we save to the DB)
+    const hashedToken = await bcryptjs.hash(unhashedToken, 10);
+
+    const tokenExpiry = Date.now() + 3600000; // Expires in 1 hour
 
     if (emailType === "VERIFY") {
       await User.findByIdAndUpdate(userId, {
         verifyToken: hashedToken,
-        verifyTokenExpiry: Date.now() + 3600000,
+        verifyTokenExpiry: tokenExpiry,
       });
     } else if (emailType === "RESET") {
       await User.findByIdAndUpdate(userId, {
         forgotPasswordToken: hashedToken,
-        forgotPasswordTokenExpiry: Date.now() + 3600000,
+        forgotPasswordTokenExpiry: tokenExpiry,
       });
     }
 
@@ -36,21 +42,20 @@ export const sendEmail = async ({
       },
     });
 
+    const pageUrl = emailType === "VERIFY" ? "verifyemail" : "reset-password";
     const mailOptions = {
       from: "auth-project@example.com",
       to: email,
       subject:
         emailType === "VERIFY" ? "Verify your email" : "Reset your password",
-      html: `<p>Click <a href="${process.env.DOMAIN}/${
-        emailType === "VERIFY" ? "verifyemail" : "reset-password"
-      }?token=${hashedToken}">here</a> to ${
+      html: `<p>Click <a href="${
+        process.env.DOMAIN
+      }/${pageUrl}?token=${unhashedToken}">here</a> to ${
         emailType === "VERIFY" ? "verify your email" : "reset your password"
       }
       or copy and paste the link below in your browser. <br> ${
         process.env.DOMAIN
-      }/${
-        emailType === "VERIFY" ? "verifyemail" : "reset-password"
-      }?token=${hashedToken}
+      }/${pageUrl}?token=${unhashedToken}
       </p>`,
     };
 
