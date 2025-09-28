@@ -3,6 +3,7 @@
 import axios from "axios";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 
 export default function VerifyEmailPage() {
   const [token, setToken] = useState("");
@@ -15,7 +16,10 @@ export default function VerifyEmailPage() {
       setVerified(true);
     } catch (error: any) {
       setError(true);
-      console.log(error.reponse.data);
+      console.log(error.response?.data || "Verification failed");
+      toast.error(
+        error.response?.data?.error || "An unexpected error occurred."
+      );
     }
   };
 
@@ -33,19 +37,22 @@ export default function VerifyEmailPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
       <h1 className="text-4xl">Verify Email</h1>
-      <h2 className="p-2 bg-orange-500 text-black">
+      <h2 className="p-2 my-4 bg-orange-500 text-black">
         {token ? `${token}` : "no token"}
       </h2>
-
       {verified && (
         <div>
           <h2 className="text-2xl">Email Verified</h2>
-          <Link href="/login">Login</Link>
+          <Link href="/login" className="text-blue-500">
+            Login
+          </Link>
         </div>
       )}
       {error && (
         <div>
-          <h2 className="text-2xl bg-red-500 text-black">Error</h2>
+          <h2 className="text-2xl bg-red-500 text-black p-2 rounded">
+            Error Verifying Email
+          </h2>
         </div>
       )}
     </div>

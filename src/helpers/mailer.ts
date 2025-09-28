@@ -1,10 +1,8 @@
 import nodemailer from "nodemailer";
 import User from "@/models/userModel";
 import bcryptjs from "bcryptjs";
-import crypto from "crypto";
 
 // 1. Validate environment variables at the start.
-// The application will crash immediately if any are missing, which is good practice.
 if (
   !process.env.MAILTRAP_HOST ||
   !process.env.MAILTRAP_PORT ||
@@ -12,14 +10,15 @@ if (
   !process.env.MAILTRAP_PASS ||
   !process.env.DOMAIN
 ) {
-  throw new Error("Missing one or more required environment variables.");
+  throw new Error(
+    "Missing one or more required environment variables for mailer."
+  );
 }
 
 // 2. Create the Nodemailer transport object once and reuse it.
-// This is much more efficient than creating it inside the function.
 const transport = nodemailer.createTransport({
   host: process.env.MAILTRAP_HOST,
-  port: Number(process.env.MAILTRAP_PORT), // Convert port from string to number
+  port: Number(process.env.MAILTRAP_PORT),
   auth: {
     user: process.env.MAILTRAP_USER,
     pass: process.env.MAILTRAP_PASS,
@@ -39,11 +38,10 @@ export const sendEmail = async ({
   userId,
 }: SendEmailProps) => {
   try {
-    // 4. Generate a secure, random token for the user.
-    const unhashedToken = crypto.randomBytes(20).toString("hex");
-    const hashedToken = await bcryptjs.hash(unhashedToken, 10);
+    // 4. Generate a secure, random token and hash it for database storage.
+    const hashedToken = await bcryptjs.hash(userId.toString(), 10);
 
-    // Update the user document with the hashed token
+    // 5. Update the user document with the correct token and expiry.
     if (emailType === "VERIFY") {
       await User.findByIdAndUpdate(userId, {
         verifyToken: hashedToken,
@@ -56,27 +54,23 @@ export const sendEmail = async ({
       });
     }
 
+    // 6. Construct the verification or reset URL.
+    const page = emailType === "VERIFY" ? "verifyemail" : "resetpassword";
+    const url = `${process.env.DOMAIN}/${page}?token=${hashedToken}`;
+
     const mailOptions = {
-      from: "youremail@example.com", // It's best to use an env variable for this too!
+      from: "auth@nextjs.pro", // Use a professional "from" address
       to: email,
       subject:
         emailType === "VERIFY" ? "Verify your email" : "Reset your password",
-      // 5. Send the original, unhashed token in the email link.
-      html: `<p>Click <a href="${
-        process.env.DOMAIN
-      }/verifyemail?token=${unhashedToken}">here</a> to ${
+      html: `<p>Click <a href="${url}">here</a> to ${
         emailType === "VERIFY" ? "verify your email" : "reset your password"
-      }
-      or copy and paste the link below in your browser. <br> ${
-        process.env.DOMAIN
-      }/verifyemail?token=${unhashedToken}
-      </p>`,
+      } or copy and paste the link below in your browser.</p><p>${url}</p>`,
     };
 
     const mailresponse = await transport.sendMail(mailOptions);
     return mailresponse;
   } catch (error: any) {
-    // Throw the original error to preserve its stack trace for easier debugging
     throw new Error(error.message);
   }
 };

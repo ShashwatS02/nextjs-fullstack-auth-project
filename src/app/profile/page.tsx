@@ -1,13 +1,19 @@
 "use client";
 import axios from "axios";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [data, setData] = useState("nothing");
+  const [user, setUser] = useState({
+    _id: "",
+    username: "",
+    email: "",
+  });
+  const [loading, setLoading] = useState(true);
+
   const logout = async () => {
     try {
       await axios.get("/api/users/logout");
@@ -19,38 +25,58 @@ export default function ProfilePage() {
     }
   };
 
-  const getUserDetails = async () => {
-    const res = await axios.get("/api/users/me");
-    console.log(res.data);
-    setData(res.data.data._id);
-  };
+  useEffect(() => {
+    const getUserDetails = async () => {
+      try {
+        const res = await axios.get("/api/users/me");
+        setUser(res.data.data);
+      } catch (error: any) {
+        console.log(error.message);
+        toast.error("Failed to fetch user details.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getUserDetails();
+  }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
-      <h1>Profile</h1>
-      <hr />
-      <p>Profile page</p>
-      <h2 className="p-1 rounded bg-green-500">
-        {data === "nothing" ? (
-          "Nothing"
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="w-full max-w-lg p-8 space-y-6 bg-gray-900/50 rounded-lg border border-gray-700 backdrop-blur-sm text-center">
+        <h1 className="text-4xl font-bold text-white">Your Profile</h1>
+        <p className="text-gray-400">Welcome to your personal dashboard.</p>
+        <hr className="border-gray-700" />
+        {loading ? (
+          <p className="text-white">Loading user details...</p>
         ) : (
-          <Link href={`/profile/${data}`}>{data}</Link>
+          <div className="text-left space-y-4 text-white">
+            <p>
+              <span className="font-semibold">Username:</span> {user.username}
+            </p>
+            <p>
+              <span className="font-semibold">Email:</span> {user.email}
+            </p>
+            <div className="flex justify-center pt-4">
+              <Link
+                href={`/profile/${user._id}`}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              >
+                View Public Profile
+              </Link>
+            </div>
+          </div>
         )}
-      </h2>
-      <hr />
-      <button
-        onClick={logout}
-        className="bg-blue-500 mt-4 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-      >
-        Logout
-      </button>
-
-      <button
-        onClick={getUserDetails}
-        className="bg-green-800 mt-4 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-      >
-        GetUser Details
-      </button>
+        <hr className="border-gray-700" />
+        <div className="flex justify-center pt-4">
+          <button
+            onClick={logout}
+            className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
