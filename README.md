@@ -1,10 +1,5 @@
 # 🚀 Auth Gateway – Full-Stack Next.js Authentication System
 
-![Auth Gateway Screenshot]((https://drive.google.com/file/d/1MMW_lBNZFpcmeCjPfXQtiV0QC2_brQgK/view?usp=sharing))
-
-![Auth Login Screenshot]((https://drive.google.com/file/d/12_3LJXzPfFreYF8IiOLtZJNGUmatYRsU/view?usp=sharing))
-
-
 A **modern, secure, and beautifully designed** full-stack authentication system built with **Next.js 15, TypeScript, and MongoDB**.
 
 Auth Gateway provides everything you need: **user registration, login, session management, email verification, and password recovery** — all wrapped in a sleek dark-themed UI.
