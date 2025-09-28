@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
@@ -8,27 +8,25 @@ export default function ResetPasswordPage() {
   const router = useRouter();
   const [token, setToken] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [verified, setVerified] = useState(false);
-  const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const onResetPassword = async () => {
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match!");
-      return;
-    }
-    try {
+  const handleResetPassword = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (token.length > 0) {
       setLoading(true);
-      await axios.post("/api/users/reset-password", { token, password });
-      toast.success("Password reset successfully!");
-      router.push("/login");
-    } catch (error: any) {
-      setError(true);
-      console.log(error.response.data);
-      toast.error(error.response.data.error || "An unexpected error occurred.");
-    } finally {
-      setLoading(false);
+      try {
+        await axios.post("/api/users/reset-password", { token, password });
+        toast.success("Password has been reset successfully!");
+        router.push("/login");
+      } catch (error: unknown) {
+        if (error instanceof AxiosError) {
+          toast.error(error.response?.data.error || "Reset failed");
+        } else {
+          toast.error("An unexpected error occurred");
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -42,53 +40,39 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-md p-8 space-y-6 bg-gray-900/50 rounded-lg border border-gray-700 backdrop-blur-sm">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white">Reset Your Password</h1>
-          <p className="text-gray-400">Please enter your new password below.</p>
+          <p className="text-gray-400">Enter your new password below.</p>
         </div>
-        <div className="space-y-4">
+        <form className="space-y-6" onSubmit={handleResetPassword}>
           <div>
             <label
               htmlFor="password"
-              className="text-sm font-medium text-gray-300"
+              className="block text-sm font-medium text-gray-300"
             >
               New Password
             </label>
-            <input
-              className="w-full px-3 py-2 mt-1 text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-            />
+            <div className="mt-1">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="appearance-none block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-gray-800 text-white"
+              />
+            </div>
           </div>
+
           <div>
-            <label
-              htmlFor="confirmPassword"
-              className="text-sm font-medium text-gray-300"
+            <button
+              type="submit"
+              disabled={loading || !token}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              Confirm New Password
-            </label>
-            <input
-              className="w-full px-3 py-2 mt-1 text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
-            />
+              {loading ? "Resetting..." : "Reset Password"}
+            </button>
           </div>
-        </div>
-        <button
-          onClick={onResetPassword}
-          className={`w-full py-2 font-semibold text-black rounded-md transition-colors ${
-            !password || !confirmPassword || loading
-              ? "bg-gray-500 cursor-not-allowed"
-              : "bg-white hover:bg-gray-200"
-          }`}
-          disabled={!password || !confirmPassword || loading}
-        >
-          {loading ? "Resetting..." : "Reset Password"}
-        </button>
+        </form>
       </div>
     </div>
   );

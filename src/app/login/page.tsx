@@ -2,7 +2,7 @@
 import Link from "next/link";
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { toast } from "react-hot-toast";
 
 export default function LoginPage() {
@@ -17,15 +17,15 @@ export default function LoginPage() {
   const onLogin = async () => {
     try {
       setLoading(true);
-      const response = await axios.post("/api/users/login", user);
-      console.log("Login success", response.data);
+      await axios.post("/api/users/login", user);
       toast.success("Login success");
       router.push("/profile");
-    } catch (error: any) {
-      console.log("Login failed", error.response?.data);
-      toast.error(
-        error.response?.data?.error || "An unexpected error occurred."
-      );
+    } catch (error: unknown) {
+      if (error instanceof AxiosError) {
+        toast.error(error.response?.data.error || "Login failed");
+      } else {
+        toast.error("An unexpected error occurred");
+      }
     } finally {
       setLoading(false);
     }
@@ -44,44 +44,38 @@ export default function LoginPage() {
       <div className="w-full max-w-md p-8 space-y-6 bg-gray-900/50 rounded-lg border border-gray-700 backdrop-blur-sm">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-white">
-            {loading ? "Processing..." : "Login to Your Account"}
+            {loading ? "Processing..." : "Login"}
           </h1>
-          <p className="text-gray-400">Welcome back! Please sign in.</p>
+          <p className="mt-2 text-gray-400">
+            Welcome back! Please enter your details.
+          </p>
         </div>
         <div className="space-y-4">
           <div>
             <label
               htmlFor="email"
-              className="text-sm font-medium text-gray-300"
+              className="block text-sm font-medium text-gray-300 text-left"
             >
               Email
             </label>
             <input
-              className="w-full px-3 py-2 mt-1 text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="mt-1 p-2 w-full border border-gray-600 rounded-lg focus:outline-none focus:border-indigo-500 bg-gray-800 text-white"
               id="email"
               type="email"
               value={user.email}
               onChange={(e) => setUser({ ...user, email: e.target.value })}
-              placeholder="your.email@example.com"
+              placeholder="your-email@example.com"
             />
           </div>
           <div>
-            <div className="flex items-center justify-between">
-              <label
-                htmlFor="password"
-                className="text-sm font-medium text-gray-300"
-              >
-                Password
-              </label>
-              <Link
-                className="text-sm text-gray-400 hover:underline"
-                href="/forgot-password"
-              >
-                Forgot Password?
-              </Link>
-            </div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-300 text-left"
+            >
+              Password
+            </label>
             <input
-              className="w-full px-3 py-2 mt-1 text-white bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="mt-1 p-2 w-full border border-gray-600 rounded-lg focus:outline-none focus:border-indigo-500 bg-gray-800 text-white"
               id="password"
               type="password"
               value={user.password}
@@ -90,24 +84,35 @@ export default function LoginPage() {
             />
           </div>
         </div>
+
+        <div className="flex items-center justify-between">
+          <div className="text-sm">
+            <Link
+              href="/forgot-password"
+              className="font-medium text-indigo-400 hover:text-indigo-300"
+            >
+              Forgot Password?
+            </Link>
+          </div>
+        </div>
+
         <button
           onClick={onLogin}
-          className={`w-full py-2 font-semibold text-black rounded-md transition-colors ${
-            buttonDisabled
-              ? "bg-gray-500 cursor-not-allowed"
-              : "bg-white hover:bg-gray-200"
-          }`}
+          className="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors disabled:opacity-50"
           disabled={buttonDisabled || loading}
         >
-          {loading ? "Logging in..." : "Login"}
+          {loading ? "Logging In..." : "Login"}
         </button>
-        <div className="text-center">
-          <Link
-            className="text-sm text-gray-400 hover:underline"
-            href="/signup"
-          >
-            Don't have an account? Sign Up
-          </Link>
+        <div className="text-center text-gray-400">
+          <p>
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/signup"
+              className="font-medium text-indigo-400 hover:text-indigo-300"
+            >
+              Sign Up
+            </Link>
+          </p>
         </div>
       </div>
     </div>
